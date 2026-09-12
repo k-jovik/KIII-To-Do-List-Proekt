@@ -1,16 +1,25 @@
-# Todo List App
+# Todo List App (Kubernetes & CI/CD)
 
-A full-stack Todo List application made of three independent services, each containerized and orchestrated with Docker Compose:
+A full-stack Todo List application containerized, deployed on a local Kubernetes cluster via NGINX Ingress, and automated with a GitHub Actions CI/CD pipeline.
 
-1. **Database** — PostgreSQL, on port `5432`
-2. **Backend** — Node.js/Express REST API, on port `3000`
-3. **Frontend** — static `index.html` (vanilla JS) served by nginx, on port `8080`
+1. **Database** — PostgreSQL running as a StatefulSet with a persistent volume and automated initialization.
+2. **Backend** — Node.js/Express REST API with explicit `/api` routing and health check connection retries.
+3. **Frontend** — Static `index.html` (vanilla JS) served via NGINX.
+4. **Ingress** — NGINX Ingress Controller routing traffic to `http://todo.local`.
 
 ## Project structure
 
 ```
-/docker-compose.yml     orchestrates all three services
-/db/init.sql             creates the todos table on first startup
+/.github/workflows
+  ci-cd.yml           GitHub Actions CI/CD pipeline definition
+/k8s
+  namespace.yaml      Defines todo-namespace
+  postgres.yaml       PostgreSQL StatefulSet, Service, and ConfigMap init script
+  backend.yaml        Backend Deployment and Service manifests
+  frontend.yaml       Frontend Deployment and Service manifests
+  ingress.yaml        NGINX Ingress configuration for todo.local
+/db
+  init.sql            Creates the todos table on first startup
 /backend
   Dockerfile
   server.js
@@ -22,47 +31,55 @@ A full-stack Todo List application made of three independent services, each cont
 
 ## Prerequisites
 
-- [Docker](https://www.docker.com/) (with Docker Compose)
+- [Docker Desktop](https://www.docker.com/) (with Kubernetes enabled)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) command-line tool
 
-## Start everything
+## Local Deployment & Setup
 
-```bash
-docker-compose up --build
-```
+1. **Enable Kubernetes** in Docker Desktop settings.
+2. **Install the NGINX Ingress Controller** (if not already installed):
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.2/deploy/static/provider/cloud/deploy.yaml
+   ```
+3. **Map the local domain** in your hosts file (`C:\Windows\System32\drivers\etc\hosts` or `/etc/hosts`):
+   ```text
+   127.0.0.1  todo.local
+   ```
+4. **Build the local Docker images**:
+   ```bash
+   docker build -t kikodocker2004/todo-backend:v2 ./backend
+   docker build -t kikodocker2004/todo-frontend:v2 ./frontend
+   ```
+5. **Apply all Kubernetes manifests**:
+   ```bash
+   kubectl apply -f ./k8s/ -n todo-namespace
+   ```
 
-This single command builds the backend and frontend images and starts all three containers:
+### API Endpoints (via Ingress)
 
-- **postgres** — user `user`, password `password`, database `todos`. The `todos` table is created automatically on first startup via `db/init.sql`.
-- **backend** — waits for postgres to be healthy, then connects using `DATABASE_URL=postgresql://user:password@postgres:5432/todos` (the containers talk to each other by service name over the Compose network).
-- **frontend** — nginx serving `index.html`, which calls the backend at `http://localhost:3000` from your browser.
-
-Add `-d` to run in the background instead: `docker-compose up --build -d`.
-
-After the first build, plain `docker-compose up` is enough — only add `--build` again after changing `backend/` or `frontend/` code.
-
-### API endpoints
-
-| Method | Path         | Description                        |
+| Method | Path | Description |
 |--------|--------------|-------------------------------------|
-| GET    | `/todos`     | Returns all todos                   |
-| POST   | `/todos`     | Creates a todo, body: `{ "title": "..." }` |
-| PATCH  | `/todos/:id` | Toggles a todo's `completed` state  |
-| DELETE | `/todos/:id` | Deletes a todo                      |
+| GET | `/api/todos` | Returns all todos |
+| POST | `/api/todos` | Creates a todo, body: `{ "title": "..." }` |
+| PATCH | `/api/todos/:id` | Toggles a todo's `completed` state |
+| DELETE | `/api/todos/:id` | Deletes a todo |
 
-## Open the app
+## Open the App
 
-Visit `http://localhost:8080` in a browser.
+Visit `http://todo.local` in a browser.
 
-## Testing it all together
+## CI/CD Pipeline (GitHub Actions)
 
-1. `docker-compose up --build`
-2. Open `http://localhost:8080`
-3. Add a todo, check it off (strikethrough applied), delete it — each action hits the backend, which reads/writes PostgreSQL, so refreshing the page preserves your todos.
+The repository includes an automated GitHub Actions workflow (`.github/workflows/ci-cd.yml`) that triggers on pushes to the main branch. 
 
-## Stopping everything
+- **Build & Test**: Automatically builds the Docker images for both backend and frontend services.
+- **Registry Push**: Authenticates and pushes updated image tags (`:v2`) to Docker Hub (`kikodocker2004/`).
 
+## Cleaning Up
+
+To delete all application resources from the cluster:
 ```bash
-docker-compose down
+kubectl delete namespace todo-namespace
 ```
 
-Add `-v` to also wipe the stored database data.
+To entirely stop and disable Kubernetes, uncheck **Enable Kubernetes** under settings in Docker Desktop.
