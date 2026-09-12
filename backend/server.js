@@ -40,68 +40,73 @@ async function connectWithRetry(retries = 10, delayMs = 2000) {
   throw new Error("Could not connect to PostgreSQL after multiple attempts");
 }
 
-app.get("/todos", async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT id, title, completed, "createdAt" FROM todos ORDER BY id ASC'
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch todos" });
-  }
-});
-
-app.post("/todos", async (req, res) => {
-  const { title } = req.body;
-  if (!title || typeof title !== "string" || !title.trim()) {
-    return res.status(400).json({ error: "title is required" });
-  }
-  try {
-    const result = await pool.query(
-      'INSERT INTO todos (title) VALUES ($1) RETURNING id, title, completed, "createdAt"',
-      [title.trim()]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create todo" });
-  }
-});
-
-app.delete("/todos/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      "DELETE FROM todos WHERE id = $1 RETURNING id",
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Todo not found" });
+function registerTodoRoutes(basePath) {
+  app.get(basePath, async (req, res) => {
+    try {
+      const result = await pool.query(
+        'SELECT id, title, completed, "createdAt" FROM todos ORDER BY id ASC'
+      );
+      res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch todos" });
     }
-    res.status(204).send();
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete todo" });
-  }
-});
+  });
 
-app.patch("/todos/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      'UPDATE todos SET completed = NOT completed WHERE id = $1 RETURNING id, title, completed, "createdAt"',
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: "Todo not found" });
+  app.post(basePath, async (req, res) => {
+    const { title } = req.body;
+    if (!title || typeof title !== "string" || !title.trim()) {
+      return res.status(400).json({ error: "title is required" });
     }
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to update todo" });
-  }
-});
+    try {
+      const result = await pool.query(
+        'INSERT INTO todos (title) VALUES ($1) RETURNING id, title, completed, "createdAt"',
+        [title.trim()]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to create todo" });
+    }
+  });
+
+  app.delete(`${basePath}/:id`, async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(
+        "DELETE FROM todos WHERE id = $1 RETURNING id",
+        [id]
+      );
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+      res.status(204).send();
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to delete todo" });
+    }
+  });
+
+  app.patch(`${basePath}/:id`, async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(
+        'UPDATE todos SET completed = NOT completed WHERE id = $1 RETURNING id, title, completed, "createdAt"',
+        [id]
+      );
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to update todo" });
+    }
+  });
+}
+
+registerTodoRoutes("/todos");
+registerTodoRoutes("/api/todos");
 
 connectWithRetry()
   .then(() => {

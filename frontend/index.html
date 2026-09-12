@@ -116,6 +116,7 @@
 
 <script>
   const API_URL = "http://localhost:3000";
+  const TODOS_PATH = "/api/todos";
 
   const todoList = document.getElementById("todo-list");
   const addForm = document.getElementById("add-form");
@@ -164,7 +165,7 @@
 
   async function loadTodos() {
     try {
-      const res = await fetch(`${API_URL}/todos`);
+      const res = await fetch(`${API_URL}${TODOS_PATH}`);
       if (!res.ok) throw new Error("Failed to fetch todos");
       const todos = await res.json();
       renderTodos(todos);
@@ -176,7 +177,7 @@
 
   async function addTodo(title) {
     try {
-      const res = await fetch(`${API_URL}/todos`, {
+      const res = await fetch(`${API_URL}${TODOS_PATH}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
@@ -191,7 +192,7 @@
 
   async function toggleTodo(id) {
     try {
-      const res = await fetch(`${API_URL}/todos/${id}`, { method: "PATCH" });
+      const res = await fetch(`${API_URL}${TODOS_PATH}/${id}`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to update todo");
       await loadTodos();
     } catch (err) {
@@ -202,7 +203,7 @@
 
   async function deleteTodo(id) {
     try {
-      const res = await fetch(`${API_URL}/todos/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_URL}${TODOS_PATH}/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete todo");
       await loadTodos();
     } catch (err) {
