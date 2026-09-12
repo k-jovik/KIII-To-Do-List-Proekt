@@ -40,7 +40,7 @@ async function connectWithRetry(retries = 10, delayMs = 2000) {
   throw new Error("Could not connect to PostgreSQL after multiple attempts");
 }
 
-app.get("/todos", async (req, res) => {
+app.get("/api/todos", async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, title, completed, "createdAt" FROM todos ORDER BY id ASC'
@@ -52,7 +52,7 @@ app.get("/todos", async (req, res) => {
   }
 });
 
-app.post("/todos", async (req, res) => {
+app.post("/api/todos", async (req, res) => {
   const { title } = req.body;
   if (!title || typeof title !== "string" || !title.trim()) {
     return res.status(400).json({ error: "title is required" });
@@ -69,7 +69,7 @@ app.post("/todos", async (req, res) => {
   }
 });
 
-app.delete("/todos/:id", async (req, res) => {
+app.delete("/api/todos/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
@@ -86,7 +86,7 @@ app.delete("/todos/:id", async (req, res) => {
   }
 });
 
-app.patch("/todos/:id", async (req, res) => {
+app.patch("/api/todos/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(
