@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "master" ]  # Или гранката што ја користиш
+    branches: [ "main", "master" ]  
 
 jobs:
   build-and-push:
@@ -25,7 +25,7 @@ jobs:
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend  # Патеката каде ти е Dockerfile-от за backend
+          context: ./backend  # Патеката каде му е Dockerfile-от за backend
           file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/todo-backend:latest
@@ -34,7 +34,7 @@ jobs:
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend  # Патеката каде ти е Dockerfile-от за frontend
+          context: ./frontend   # Патеката каде му е Dockerfile-от за frontend
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/todo-frontend:latest

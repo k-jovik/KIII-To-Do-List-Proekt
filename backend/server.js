@@ -106,7 +106,7 @@ app.patch("/api/todos/:id", async (req, res) => {
 connectWithRetry()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Backend listening on http://localhost:${PORT}`);
+      console.log(`Server is running and listening on port ${PORT}`);
     });
   })
   .catch((err) => {
